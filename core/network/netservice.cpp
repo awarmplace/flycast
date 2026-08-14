@@ -19,6 +19,7 @@
 #include "netservice.h"
 #include "picoppp.h"
 #include "dcnet.h"
+#include "serialbridge.h"
 #include "emulator.h"
 #include "cfg/option.h"
 
@@ -27,17 +28,25 @@ namespace net::modbba
 
 static Service *service;
 static bool usingDCNet;
+static bool usingBridge;
 
 bool start()
 {
-	if (service == nullptr || usingDCNet != config::UseDCNet)
+	// MODEMBRIDGE overrides the configured backend. Some online titles do not
+	// speak PPP, so neither existing backend can serve them; the bridge carries
+	// the byte stream to a server outside the emulator.
+	const bool wantBridge = !SerialBridgeService::endpoint().empty();
+	if (service == nullptr || usingDCNet != config::UseDCNet || usingBridge != wantBridge)
 	{
 		delete service;
-		if (config::UseDCNet)
+		if (wantBridge)
+			service = new SerialBridgeService();
+		else if (config::UseDCNet)
 			service = new DCNetService();
 		else
 			service = new PicoTcpService();
 		usingDCNet = config::UseDCNet;
+		usingBridge = wantBridge;
 	}
 	return service->start();
 }
