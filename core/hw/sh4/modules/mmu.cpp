@@ -4,6 +4,7 @@
 #include "hw/sh4/sh4_interrupts.h"
 #include "hw/sh4/sh4_core.h"
 #include "debug/gdb_server.h"
+#include "debug/sh4watch.h"
 #include "serialize.h"
 
 TLB_Entry UTLB[64];
@@ -550,6 +551,10 @@ void DYNACALL mmu_WriteMem(u32 adr, T data)
 	MmuError rv = mmu_data_translation<MMU_TT_DWRITE>(adr, addr);
 	if (rv != MmuError::NONE)
 		mmu_raise_exception(rv, adr, MMU_TT_DWRITE);
+	// Watch guest writes by VIRTUAL address. This has to happen here, before
+	// translation would lose it, because the addresses we care about are
+	// Windows CE virtual addresses. Costs one bool test when no watch is set.
+	sh4watch::onWrite(adr, (u64)data, (int)sizeof(T));
 	addrspace::writet<T>(addr, data);
 }
 template void mmu_WriteMem(u32 adr, u8 data);

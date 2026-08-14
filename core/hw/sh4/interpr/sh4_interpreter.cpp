@@ -49,6 +49,11 @@ void Sh4Interpreter::Run()
 			try {
 				do
 				{
+					// Execution trap, before ReadNexOp advances the PC, so
+					// ctx->pc is still the address of the instruction about to
+					// run. One bool test when SH4TRAP is not set.
+					sh4watch::onExec(ctx->pc);
+
 					u32 op = ReadNexOp();
 
 					ExecuteOpcode(op);

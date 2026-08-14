@@ -1,4 +1,6 @@
 target_sources(${PROJECT_NAME} PRIVATE
+        ../../debug/sh4watch.cpp
+        ../../debug/sh4watch.h
         dyna/blockmanager.cpp
         dyna/blockmanager.h
         dyna/decoder.cpp

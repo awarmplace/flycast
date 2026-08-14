@@ -22,6 +22,7 @@
 #include "sh4_mem.h"
 #include "modules/mmu.h"
 #include "hw/sh4/sh4_if.h"
+#include "debug/sh4watch.h"
 #include "serialize.h"
 #include "sh4_cycles.h"
 
@@ -623,6 +624,11 @@ T ReadCachedMem(u32 address)
 template<class T>
 void WriteCachedMem(u32 address, T data)
 {
+	// The write watch has to be here as well as in mmu_WriteMem. With
+	// STRICT_MODE and the interpreter, SetMemoryHandlers points every write at
+	// this function and returns before the MMU path is ever considered, so a
+	// hook placed only in mmu_WriteMem records nothing at all.
+	sh4watch::onWrite(address, (u64)data, (int)sizeof(T));
 	ocache.WriteMem<T>(address, data);
 }
 
