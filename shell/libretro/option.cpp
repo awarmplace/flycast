@@ -117,6 +117,10 @@ Option<bool> NetworkEnable("", false);
 Option<bool> ActAsServer("", false);
 Option<bool> NaomiSatellite("", false);
 OptionString DNS("", "dns.flyca.st");
+// The libretro core keeps its own copy of every option, so anything added to
+// core/cfg needs a definition here as well or the core fails to link. Empty
+// by default: the standalone build is the one aimed at the SR2 lobby.
+OptionString ModemBridge("", "");
 OptionString NetworkServer("", "");
 Option<int> LocalPort("", 0);
 Option<bool> EmulateBBA(CORE_OPTION_NAME "_emulate_bba", false);
