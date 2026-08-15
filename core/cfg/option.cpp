@@ -117,7 +117,13 @@ Option<bool> NativeDepthInterpolation("rend.NativeDepthInterpolation", true);
 #else
 Option<bool> NativeDepthInterpolation("rend.NativeDepthInterpolation", false);
 #endif
-Option<bool> EmulateFramebuffer("rend.EmulateFramebuffer", false);
+// ON by default in this build. Sega Rally 2 draws its network screens with
+// direct framebuffer writes rather than through the polygon path, so without
+// this the name entry, the dial screen and the lobby never appear: the game
+// runs fine underneath but the picture stays on a green PLEASE WAIT. Stock
+// Flycast leaves this off because it costs performance in games that do not
+// need it. Turn it off if you are playing something else.
+Option<bool> EmulateFramebuffer("rend.EmulateFramebuffer", true);
 Option<bool> FixUpscaleBleedingEdge("rend.FixUpscaleBleedingEdge", true);
 Option<bool> CustomGpuDriver("rend.CustomGpuDriver", false);
 Option<bool> FramePacing("rend.FramePacing", true);
