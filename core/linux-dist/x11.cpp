@@ -133,7 +133,7 @@ static void x11_capture_mouse()
 
 static void x11_uncapture_mouse()
 {
-	x11_window_set_text("Flycast");
+	x11_window_set_text(FLYCAST_PRODUCT_NAME);
 	capturing_mouse = false;
 	XUndefineCursor(x11_disp, x11_win);
 	XUngrabPointer(x11_disp, CurrentTime);
@@ -358,7 +358,7 @@ void x11_window_create()
 
 		XFlush(x11_disp);
 
-		x11_window_set_text("Flycast");
+		x11_window_set_text(FLYCAST_PRODUCT_NAME);
 	}
 	else
 	{

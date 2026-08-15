@@ -278,3 +278,8 @@ constexpr unsigned operator""_sh4ms(unsigned long long t) {
 constexpr unsigned operator""_sh4us(unsigned long long t) {
 	return SH4_MAIN_CLOCK / 1'000'000 * t;
 }
+
+// The product name shown in the window title and the about screen. This fork
+// carries a modem serial bridge for games that speak their own protocol, so
+// it is not stock Flycast and should not claim to be.
+#define FLYCAST_PRODUCT_NAME "Flycast SR2:REDWANGO TEST BUILD"

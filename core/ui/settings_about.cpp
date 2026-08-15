@@ -48,7 +48,7 @@ static void customDriverCallback(bool cancelled, std::string selection)
 
 void gui_settings_about()
 {
-    header("Flycast");
+    header(FLYCAST_PRODUCT_NAME);
     {
 		ImGui::Text(T("Version: %s"), GIT_VERSION);
 		ImGui::Text(T("Git Hash: %s"), GIT_HASH);

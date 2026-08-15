@@ -170,6 +170,12 @@ Option<bool> NetworkEnable("Enable", false, "network");
 Option<bool> ActAsServer("ActAsServer", false, "network");
 Option<bool> NaomiSatellite("NaomiSatellite", false, "network");
 OptionString DNS("DNS", "dns.flyca.st", "network");
+// The public SR2:REDWANGO lobby, so this build reaches a server with no
+// setting up at all. NOTE: a non-empty value here makes the serial bridge
+// the modem backend for EVERY game, not just Sega Rally 2, because no other
+// game announces which protocol it speaks. That suits a build named for one
+// game. Clear this setting to get the stock PPP behaviour back.
+OptionString ModemBridge("ModemBridge", "redwango-lon.sr2.awarm.place:7654", "network");
 OptionString NetworkServer("server", "", "network");
 Option<int> LocalPort("LocalPort", defaultNaomiServerPort(), "network");
 Option<bool> EmulateBBA("EmulateBBA", false, "network");

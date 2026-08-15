@@ -17,6 +17,7 @@
     along with Flycast.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "serialbridge.h"
+#include "cfg/option.h"
 #include <cstdlib>
 #include <cstring>
 
@@ -25,8 +26,14 @@ namespace net::modbba
 
 std::string SerialBridgeService::endpoint()
 {
+	// The setting comes first, so a user can configure this in the GUI or in
+	// emu.cfg under [network] ModemBridge. The environment variable stays as
+	// an override, which is what the first proof of concept used and what
+	// scripts that launch several instances still rely on.
 	const char *e = getenv("MODEMBRIDGE");
-	return e != nullptr ? std::string(e) : std::string();
+	if (e != nullptr && *e != '\0')
+		return std::string(e);
+	return config::ModemBridge.get();
 }
 
 bool SerialBridgeService::start()

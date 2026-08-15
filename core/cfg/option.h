@@ -526,6 +526,9 @@ extern Option<bool> NetworkEnable;
 extern Option<bool> ActAsServer;
 extern Option<bool> NaomiSatellite;
 extern OptionString DNS;
+// host:port of a server that speaks a game's own modem protocol. Empty
+// disables the serial bridge and the modem behaves as before.
+extern OptionString ModemBridge;
 extern OptionString NetworkServer;
 extern Option<int> LocalPort;
 extern Option<bool> EmulateBBA;
