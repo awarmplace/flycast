@@ -170,7 +170,13 @@ def wait_for_port(port, timeout=60.0, host="127.0.0.1"):
 
 
 def launch(exe, game=None, port=DEFAULT_PORT, extra_args=None, wait=True):
-    """Start Flycast with the driver listening on `port`."""
+    """Start Flycast with the driver listening on `port`.
+
+    The child is detached so it outlives this process. Without that, a Flycast
+    started from inside an automation harness dies when the harness tears down
+    the shell's process tree, which looks exactly like a crash but leaves no
+    trace in the log.
+    """
     env = dict(os.environ)
     env["FLYCAST_DRIVER_PORT"] = str(port)
     cmd = [exe]
@@ -178,7 +184,25 @@ def launch(exe, game=None, port=DEFAULT_PORT, extra_args=None, wait=True):
         cmd.append(game)
     if extra_args:
         cmd.extend(extra_args)
-    proc = subprocess.Popen(cmd, env=env, cwd=os.path.dirname(os.path.abspath(exe)))
+    cwd = os.path.dirname(os.path.abspath(exe))
+
+    kwargs = {"env": env, "cwd": cwd, "close_fds": True}
+    if os.name == "nt":
+        detach = (subprocess.CREATE_NEW_PROCESS_GROUP
+                  | subprocess.DETACHED_PROCESS
+                  | subprocess.CREATE_BREAKAWAY_FROM_JOB)
+        try:
+            proc = subprocess.Popen(cmd, creationflags=detach, **kwargs)
+        except OSError:
+            # the job object may forbid breakaway; fall back to plain detach
+            proc = subprocess.Popen(
+                cmd,
+                creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP
+                               | subprocess.DETACHED_PROCESS),
+                **kwargs)
+    else:
+        proc = subprocess.Popen(cmd, start_new_session=True, **kwargs)
+
     if wait and not wait_for_port(port):
         raise DriverError("Flycast did not open port %d within 60s" % port)
     return proc
@@ -187,36 +211,49 @@ def launch(exe, game=None, port=DEFAULT_PORT, extra_args=None, wait=True):
 # ----------------------------------------------------------------------- CLI
 
 def main():
+    # --port is accepted both before and after the subcommand; putting it only
+    # on the top-level parser is a needless trap
+    # SUPPRESS matters: with a real default, the subparser would overwrite a
+    # --port given before the subcommand with its own default
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--port", type=int, default=argparse.SUPPRESS)
+
     ap = argparse.ArgumentParser(
+        parents=[common],
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     sub = ap.add_subparsers(dest="action", required=True)
 
-    sub.add_parser("status")
+    sub.add_parser("status", parents=[common])
 
-    p = sub.add_parser("exec", help="run one or more driver commands in order")
+    p = sub.add_parser("exec", parents=[common],
+                       help="run one or more driver commands in order")
     p.add_argument("commands", nargs="+")
 
-    p = sub.add_parser("eval", help="evaluate a Lua chunk")
+    p = sub.add_parser("eval", parents=[common], help="evaluate a Lua chunk")
     p.add_argument("chunk")
 
-    p = sub.add_parser("shot", help="capture a screenshot")
+    p = sub.add_parser("shot", parents=[common], help="capture a screenshot")
     p.add_argument("path", nargs="?", default=os.path.join(SCRATCH, "shot.png"))
 
-    p = sub.add_parser("settle", help="advance until the screen stops changing")
+    p = sub.add_parser("settle", parents=[common],
+                       help="advance until the screen stops changing")
     p.add_argument("--max-frames", type=int, default=900)
     p.add_argument("--shot", help="capture to this path once settled")
 
-    p = sub.add_parser("launch", help="start Flycast with the driver enabled")
+    p = sub.add_parser("launch", parents=[common],
+                       help="start Flycast with the driver enabled")
     p.add_argument("exe")
     p.add_argument("game", nargs="?")
     p.add_argument("--no-wait", action="store_true")
 
     args = ap.parse_args()
+    args.port = getattr(args, "port", DEFAULT_PORT)
 
     if args.action == "launch":
-        launch(args.exe, args.game, args.port, wait=not args.no_wait)
-        print("flycast running, driver on port %d" % args.port)
+        proc = launch(args.exe, args.game, args.port, wait=not args.no_wait)
+        # print the pid so callers can later stop exactly this instance --
+        # never kill flycast by image name, other instances may be running
+        print("pid=%d port=%d" % (proc.pid, args.port))
         return 0
 
     try:
