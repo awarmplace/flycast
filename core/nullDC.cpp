@@ -14,6 +14,7 @@
 #include "ui/mainui.h"
 #include "input/gamepad_device.h"
 #include "lua/lua.h"
+#include "driver/driver.h"	// flycast-driver
 #include "stdclass.h"
 #include "serialize.h"
 #include "oslib/i18n.h"
@@ -111,6 +112,7 @@ int flycast_init(int argc, char* argv[])
 		if(config::GDB)
 			debugger::init(config::GDBPort + config::loadInt("naomi", "BoardId"));
 		lua::init();
+		driver::init();	// flycast-driver
 
 		if(config::ProfilerEnabled)
 			LogManager::GetInstance()->SetEnable(LogTypes::PROFILER, true);
@@ -169,6 +171,7 @@ void SaveSettings()
 void flycast_term()
 {
 	gui_cancel_load();
+	driver::term();	// flycast-driver
 	lua::term();
 	emu.term();
 	os_DestroyWindow();

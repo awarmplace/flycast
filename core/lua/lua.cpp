@@ -625,8 +625,8 @@ void exec(const std::string& path)
 void init()
 {
 	std::string initFile = getLuaFile();
-	if (!file_exists(initFile))
-		return;
+	// flycast-driver: always create the state, even with no init script, so
+	// the control server can evaluate chunks on demand.
 	L = luaL_newstate();
 	luaL_openlibs(L);
 	luaRegister(L);
@@ -638,7 +638,43 @@ void init()
     EventManager::listen(Event::VBlank, emuEventCallback);
     EventManager::listen(Event::Network, emuEventCallback);
 
-	doExec(initFile);
+	if (file_exists(initFile))	// flycast-driver
+		doExec(initFile);
+}
+
+// flycast-driver
+bool evalString(const std::string& chunk, std::string& result)
+{
+	if (L == nullptr) {
+		result = "Lua is not initialized";
+		return false;
+	}
+	lock_guard lock(mutex);
+	const int top = lua_gettop(L);
+	if (luaL_loadstring(L, chunk.c_str()) != LUA_OK)
+	{
+		const char *msg = lua_tostring(L, -1);
+		result = msg != nullptr ? msg : "load error";
+		lua_settop(L, top);
+		return false;
+	}
+	if (lua_pcall(L, 0, 1, 0) != LUA_OK)
+	{
+		const char *msg = lua_tostring(L, -1);
+		result = msg != nullptr ? msg : "runtime error";
+		lua_settop(L, top);
+		return false;
+	}
+	if (lua_gettop(L) == top || lua_isnil(L, -1))
+		result = "nil";
+	else if (lua_isboolean(L, -1))
+		result = lua_toboolean(L, -1) ? "true" : "false";
+	else {
+		const char *s = lua_tostring(L, -1);
+		result = s != nullptr ? s : "nil";
+	}
+	lua_settop(L, top);
+	return true;
 }
 
 void term()

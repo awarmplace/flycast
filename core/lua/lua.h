@@ -25,6 +25,8 @@ namespace lua
 
 void init();
 void term();
+// flycast-driver: run a chunk, returning its first result as text
+bool evalString(const std::string& chunk, std::string& result);
 void exec(const std::string& path);
 void overlay();
 
@@ -32,6 +34,10 @@ void overlay();
 
 inline static void init() {}
 inline static void term() {}
+inline static bool evalString(const std::string&, std::string& result) {	// flycast-driver
+	result = "Lua support is not compiled in";
+	return false;
+}
 inline static void exec(const std::string& path) {}
 inline static void overlay() {}
 
