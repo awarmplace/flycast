@@ -6,6 +6,7 @@
 #include "hw/sh4/sh4_mem.h"
 #include "hw/sh4/sh4_sched.h"
 #include "network/ggpo.h"
+#include "driver/driver.h"	// flycast-driver
 #include "hw/naomi/card_reader.h"
 
 #include <memory>
@@ -151,6 +152,7 @@ static void maple_DoDma()
 #endif
 
 	ggpo::getInput(mapleInputState);
+	driver::onMaplePoll();	// flycast-driver
 	// TODO put this elsewhere and let the card readers handle being called multiple times
 	if (settings.platform.isNaomi())
 	{

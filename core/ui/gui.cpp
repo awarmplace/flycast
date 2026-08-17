@@ -17,6 +17,8 @@
     along with Flycast.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "gui.h"
+#include <future>	// flycast-driver
+#include <nowide/cstdio.hpp>
 #include "rend/osd.h"
 #include "cfg/cfg.h"
 #include "imgui.h"
@@ -1695,6 +1697,47 @@ std::string gui_getCurGameBoxartUrl()
 
 void gui_runOnUiThread(std::function<void()> function) {
 	uiThreadRunner.runOnThread(function);
+}
+
+// flycast-driver: synchronous screenshot to an arbitrary path. Safe to call
+// from any thread; the capture itself runs on the UI thread.
+bool gui_captureScreenshotToFile(const std::string& path, std::string& error)
+{
+	struct Shared {
+		std::promise<bool> promise;
+		std::string error;
+	};
+	auto shared = std::make_shared<Shared>();
+	std::future<bool> future = shared->promise.get_future();
+
+	gui_runOnUiThread([shared, path]() {
+		std::vector<u8> data;
+		getScreenshot(data);
+		if (data.empty()) {
+			shared->error = "no frame available (is a game running?)";
+			shared->promise.set_value(false);
+			return;
+		}
+		FILE *f = nowide::fopen(path.c_str(), "wb");
+		if (f == nullptr) {
+			shared->error = "cannot open " + path + " for writing";
+			shared->promise.set_value(false);
+			return;
+		}
+		const bool ok = fwrite(data.data(), 1, data.size(), f) == data.size();
+		fclose(f);
+		if (!ok)
+			shared->error = "failed writing " + path;
+		shared->promise.set_value(ok);
+	});
+
+	if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+		error = "screenshot timed out waiting for the UI thread";
+		return false;
+	}
+	const bool ok = future.get();
+	error = shared->error;
+	return ok;
 }
 
 void gui_takeScreenshot()
