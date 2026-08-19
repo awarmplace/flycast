@@ -20,3 +20,8 @@ core/deps/glslang/
 .cache/
 compile_commands.json
 CMakeUserPresets.json
+build-dev/
+build-baseline/
+build-driver/
+build-redwango/
+build-release/
