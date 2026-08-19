@@ -34,7 +34,13 @@ bool start()
 	if (service == nullptr || usingDCNet != config::UseDCNet)
 	{
 		delete service;
-		if (settings.content.gameId == "HDR0010")	// Sega Rally 2 (JP)
+		// Games that speak neither PPP nor IP on the match link, and so need the raw byte
+		// pipe rather than a TCP/IP stack. Power Stone 2 dials an ISP and speaks PPP for
+		// the lobby, then places a SECOND modem call for the fight - and that second call
+		// carries a proprietary byte protocol, which is what this backend is for.
+		const std::string& gameId = settings.content.gameId;
+		if (gameId == "HDR0010"			// Sega Rally 2 (JP)
+				|| gameId == "T1218M")	// Power Stone 2 (JP)
 			service = new RawModemService();
 		else if (config::UseDCNet)
 			service = new DCNetService();
