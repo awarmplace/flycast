@@ -144,7 +144,7 @@ public:
 
 private:
 	void run();
-	void connect(const std::string& hostname);
+	void connect(const std::string& hostname, uint16_t port);
 
 	std::thread thread;
 	std::unique_ptr<asio::io_context> io_context;
@@ -159,10 +159,28 @@ void RawModemThread::run()
 {
 	toModem.clear();
 	try {
+		// MODEMBRIDGE=host:port overrides both, for pointing a console at a server on this
+		// machine during development. Without it the behaviour is unchanged: the configured
+		// DCNet host, or the default, on IP_PORT.
+		const char *bridge = getenv("MODEMBRIDGE");
+		if (bridge != nullptr && *bridge != '\0')
+		{
+			std::string ep(bridge);
+			const size_t colon = ep.rfind(':');
+			std::string host = colon == std::string::npos ? ep : ep.substr(0, colon);
+			uint16_t port = colon == std::string::npos
+					? IP_PORT : (uint16_t)strtoul(ep.substr(colon + 1).c_str(), nullptr, 10);
+			if (host.empty())
+				host = "127.0.0.1";
+			NOTICE_LOG(NETWORK, "RawModem: MODEMBRIDGE overrides the server: %s:%d",
+					host.c_str(), port);
+			connect(host, port);
+		}
+		else
 #ifndef LIBRETRO
-		connect(config::loadStr("network", "DCNetServer", "dcnet.flyca.st"));
+		connect(config::loadStr("network", "DCNetServer", "dcnet.flyca.st"), IP_PORT);
 #else
-		connect("dcnet.flyca.st");
+		connect("dcnet.flyca.st", IP_PORT);
 #endif
 		io_context->run();
 	} catch (const FlycastException& e) {
@@ -173,11 +191,11 @@ void RawModemThread::run()
 	}
 }
 
-void RawModemThread::connect(const std::string& hostname)
+void RawModemThread::connect(const std::string& hostname, uint16_t port)
 {
 	asio::ip::tcp::resolver resolver(*io_context);
 	asio::error_code ec;
-	auto it = resolver.resolve(hostname, std::to_string(IP_PORT), ec);
+	auto it = resolver.resolve(hostname, std::to_string(port), ec);
 	if (ec)
 		throw FlycastException(ec.message());
 	if (it.empty())
