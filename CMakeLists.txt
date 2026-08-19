@@ -1085,6 +1085,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 		core/cheats.cpp
 		core/cheats.h
 		core/emulator.h
+		core/debug/sh4_watch.cpp
 		core/nullDC.cpp
 		core/serialize.cpp
 		core/serialize.h
@@ -1092,7 +1093,8 @@ target_sources(${PROJECT_NAME} PRIVATE
 		core/stdclass.cpp
 		core/stdclass.h
 		core/types.h
-		core/debug/gdb_server.h)
+		core/debug/gdb_server.h
+		core/debug/sh4_watch.h)
 
 set(IMGUI_BACKENDS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/core/deps/imgui/backends")
 
