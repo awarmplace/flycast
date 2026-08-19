@@ -31,19 +31,25 @@ is the one to leave alone.
 
 ## Ours (github.com/awarmplace/flycast)
 
+Prefixed `awp/` so it is obvious at a glance which branches are ours and which are
+flyinghead's. All of them sit on `upstream/dev`.
+
 | branch | ahead | status | what is on it |
 |---|---|---|---|
-| `flycast-driver` | 3 | **LIVE - the base we build from** | The TCP control server that makes the emulator scriptable: frame-accurate input timed in maple polls, guest memory read/write, Lua eval, screenshots, savestates. Plus detached launch with `--port`, and the agent operating guide in `tools/driver/`. This is the instrument that has settled more questions than every other technique combined. |
-| `dev-instrumentation` | 2 | to be folded in | The SH-4 write watch and execution trap, ported from the research fork, on top of the serial bridge. The tracing half is still wanted; the serial-bridge half underneath it is not (see below). |
-| `dwango-serial-bridge` | 1 | **SUPERSEDED - do not merge** | The original `MODEMBRIDGE` serial bridge: a raw byte pipe for games that speak neither PPP nor IP. Flyinghead has now implemented the same idea upstream as `RawModemService` in `rawmodem.cpp`, with the identical `writeModem` / `readModem` / `modemAvailable` interface. Carrying this branch would mean maintaining a parallel implementation of a feature upstream now ships. Keep the branch as history; do not build from it. |
-| `sr2-redwango-build` | 5 | historical | The Sega Rally 2 REDWANGO test build, a libretro link fix for `ModemBridge`, and a framebuffer-emulation default. Point-in-time build branch, kept for reference. |
-| `master` | 0 | mirror | Plain upstream master. Useful only for comparison. |
+| `awp/main` | 6 | **the branch we build from** | Everything below, integrated, plus this document. This is the one to check out. |
+| `awp/driver` | 3 | live, single-purpose | The TCP control server that makes the emulator scriptable: input timed in maple polls, guest memory read/write, Lua eval, screenshots, savestates; detached launch with `--port`; the agent guide in `tools/driver/`. |
+| `awp/sh4-trace` | 1 | live, single-purpose | The SH-4 watches and traps - execution trap, polled value watch, range read and write watches, and the sidecar summary that survives a hard kill. Self-contained, ~300 lines, no recompiler or census scaffolding. |
+| `awp/rawmodem-local` | 1 | live, **the PR candidate** | `MODEMBRIDGE=host:port` to point a console at a server on this machine, and Power Stone 2's `T1218M` alongside Sega Rally's. Small, general, and inert when the variable is unset - the most plausible thing to offer upstream. |
+| `master`, `dev` | 0 | mirrors | Plain upstream. Never commit to these; they exist so we can diff and rebase against a known-clean reference. |
+| `archive/*` | - | history, do not build | `dwango-serial-bridge` (superseded by upstream's rawmodem), `dev-instrumentation` (its tracing is now `awp/sh4-trace`, on a cleaner base), `sr2-redwango-build` (a point-in-time build). Kept because the serial bridge is what flyinghead built the Sega Rally support from. |
 
----
+**Why the single-purpose branches exist at all:** each is a potential contribution. Keeping
+them unmixed means offering one upstream is a cherry-pick rather than an archaeology
+exercise. `awp/main` is where they live together for our own builds.
 
-## What is being assembled, and why
+## What was assembled, and why
 
-`flycast-driver` rebased onto `upstream/dev`, plus two things carried over:
+Done on 2026-08-19: `awp/main` is `upstream/dev` plus the driver, and two things carried over:
 
 1. **The SH-4 tracing** - read watches, write watches, execution traps, and the per-PC
    summary sidecar that survives a hard kill. Currently living in `sr2-bba/flycast`'s
