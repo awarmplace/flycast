@@ -9,6 +9,7 @@
 #include "hw/sh4/modules/mmu.h"
 #include "hw/sh4/sh4_interrupts.h"
 #include "debug/gdb_server.h"
+#include "debug/sh4_watch.h"
 #include "hw/sh4/dyna/decoder.h"
 #include "emulator.h"
 
@@ -16,12 +17,23 @@
 #include "hw/sh4/sh4_cache.h"
 #endif
 
+// SH-4 range watches hook here, through inline wrappers rather than inside the macros.
+// The macros are used in base+offset form, so `addr` is an expression: evaluating it twice
+// to hand a copy to the watch would risk changing behaviour for the sake of instrumentation.
+// The wrappers are inert unless SH4TRACE_RDWATCH_LO/_HI or _WRWATCH_LO/_HI are set.
+static inline u32 watchRead32(u32 addr) { sh4watch::onRead(addr); return ReadMem32(addr); }
+static inline u32 watchRead16(u32 addr) { sh4watch::onRead(addr); return ReadMem16(addr); }
+static inline u32 watchRead8(u32 addr)  { sh4watch::onRead(addr); return ReadMem8(addr); }
+static inline void watchWrite32(u32 addr, u32 v) { sh4watch::onWrite(addr); WriteMem32(addr, v); }
+static inline void watchWrite16(u32 addr, u16 v) { sh4watch::onWrite(addr); WriteMem16(addr, v); }
+static inline void watchWrite8(u32 addr, u8 v)   { sh4watch::onWrite(addr); WriteMem8(addr, v); }
+
 //Read Mem macros
 
-#define ReadMemU32(to,addr) to=ReadMem32(addr)
-#define ReadMemS32(to,addr) to=(s32)ReadMem32(addr)
-#define ReadMemS16(to,addr) to=(u32)(s32)(s16)ReadMem16(addr)
-#define ReadMemS8(to,addr)  to=(u32)(s32)(s8)ReadMem8(addr)
+#define ReadMemU32(to,addr) to=watchRead32(addr)
+#define ReadMemS32(to,addr) to=(s32)watchRead32(addr)
+#define ReadMemS16(to,addr) to=(u32)(s32)(s16)watchRead16(addr)
+#define ReadMemS8(to,addr)  to=(u32)(s32)(s8)watchRead8(addr)
 
 //Base,offset format
 #define ReadMemBOU32(to,addr,offset)    ReadMemU32(to,addr+offset)
@@ -29,9 +41,9 @@
 #define ReadMemBOS8(to,addr,offset)     ReadMemS8(to,addr+offset)
 
 //Write Mem Macros
-#define WriteMemU32(addr,data)          WriteMem32(addr,(u32)data)
-#define WriteMemU16(addr,data)          WriteMem16(addr,(u16)data)
-#define WriteMemU8(addr,data)           WriteMem8(addr,(u8)data)
+#define WriteMemU32(addr,data)          watchWrite32(addr,(u32)data)
+#define WriteMemU16(addr,data)          watchWrite16(addr,(u16)data)
+#define WriteMemU8(addr,data)           watchWrite8(addr,(u8)data)
 
 //Base,offset format
 #define WriteMemBOU32(addr,offset,data) WriteMemU32(addr+offset,data)

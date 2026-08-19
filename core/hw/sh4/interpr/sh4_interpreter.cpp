@@ -3,6 +3,7 @@
 */
 
 #include "types.h"
+#include "debug/sh4_watch.h"
 
 #include "../sh4_interpreter.h"
 #include "../sh4_opcode_list.h"
@@ -18,8 +19,11 @@ Sh4ICache icache;
 Sh4OCache ocache;
 Sh4Interpreter *Sh4Interpreter::Instance;
 
+// SH-4 watches and traps. One call per executed opcode - see core/debug/sh4_watch.h. It is
+// inert unless an environment variable arms it, so the cost when idle is a bool test.
 void Sh4Interpreter::ExecuteOpcode(u16 op)
 {
+	sh4watch::perInstruction();
 	if (ctx->sr.FD == 1 && OpDesc[op]->IsFloatingPoint())
 		throw SH4ThrownException(ctx->pc - 2, Sh4Ex_FpuDisabled);
 	OpPtr[op](ctx, op);
